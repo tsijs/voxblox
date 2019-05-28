@@ -122,6 +122,54 @@ inline Color convertColor(const pcl::PointXYZ& /*point*/,
   return color_map->colorLookup(0);
 }
 
+inline void convertPointcloudFilter(
+    const typename pcl::PointCloud<pcl::PointXYZRGB>& pointcloud_pcl,
+    const std::shared_ptr<ColorMap>& color_map, Pointcloud* points_C,
+    Colors* colors) {
+  points_C->reserve(pointcloud_pcl.size());
+  colors->reserve(pointcloud_pcl.size());
+  for (size_t i = 0; i < pointcloud_pcl.points.size(); ++i) {
+    double r = pointcloud_pcl.points[i].r;
+    double g = pointcloud_pcl.points[i].g;
+    double b = pointcloud_pcl.points[i].b;
+    // get the green filtering again
+    double cmax = (double) std::max(std::max(r,g),b);
+    double cmin = (double) std::min(std::min(r,g),b);
+    double delta = cmax-cmin;
+    double H;
+    double S;
+    if (cmax == 0)
+      S = 0.0;
+    else 
+      S = delta / cmax;
+    if (delta == 0)
+      H = 0.0;
+    else if (cmax == r)
+      H = std::fmod((g-b)/delta, 6.0);
+    else if (cmax == g)
+      H = (b-r)/delta + 2.0;
+    else if (cmax == b)
+      H = (r-g)/delta + 4.0;
+
+    if (H<0.0)
+      H += 6.0;
+
+    if (1.8 < H && H < 2.8)
+      ROS_INFO_STREAM(H << " , " << S << " , " << cmax);
+
+    if (!isPointFinite(pointcloud_pcl.points[i]) || !(H < 2.8 && S > 0.45 && H > 1.8 && cmax > 70.0)) {
+      continue;
+    }
+    points_C->push_back(Point(pointcloud_pcl.points[i].x,
+                              pointcloud_pcl.points[i].y,
+                              pointcloud_pcl.points[i].z));
+    ROS_INFO_STREAM("aaa");
+    colors->emplace_back(
+        convertColor<pcl::PointXYZRGB>(pointcloud_pcl.points[i], color_map));
+  }
+}
+
+
 /// Convert pointclouds of different PCL types to a voxblox pointcloud.
 template <typename PCLPoint>
 inline void convertPointcloud(

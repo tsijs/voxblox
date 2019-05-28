@@ -236,7 +236,10 @@ void TsdfServer::processPointCloudMessageAndInsert(
     pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
     // pointcloud_pcl is modified below:
     pcl::fromROSMsg(*pointcloud_msg, pointcloud_pcl);
-    convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
+    convertPointcloudFilter(pointcloud_pcl, color_map_, &points_C, &colors);
+    // convertPointcloud(pointcloud_pcl, color_map_, &points_C, &colors);
+  // filter again...
+  //
   } else if (has_intensity) {
     pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
     // pointcloud_pcl is modified below:
